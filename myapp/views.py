@@ -3,16 +3,35 @@ from django.http import HttpResponse, JsonResponse
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import IsAuthenticated, AllowAny
 from .models import Post, Like
 from .serializers import PostSerializer, LikeSerializer
+from rest_framework.authtoken.models import Token
+from rest_framework.authentication import TokenAuthentication
+from django.contrib.auth import authenticate
 
-def index(request):
-        print(request.user)
+class IndexView(APIView):
+    permission_classes = [AllowAny]
+
+    def get(self, request):
         return HttpResponse("This is an index page")
+
+class LoginView(APIView):
+    authentication_classes = [TokenAuthentication]
+
+    def post(self, request):
+        user = authenticate(username=request.data['username'], password=request.data['password'])
+        if user:
+            token, created = Token.objects.get_or_create(user=user)
+            return Response({'token': token.key})
+        else:
+            return Response({'error': 'Invalid credentials'}, status=401)
 
 class PostView(APIView):
     permission_classes = [IsAuthenticated]
+    
+
+   
 
     def get(self, request, post_id=None):
         if post_id:
