@@ -4,8 +4,8 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated, AllowAny
-from .models import Post, Like
-from .serializers import PostSerializer, LikeSerializer
+from .models import Post, Like , CustomUser
+from .serializers import PostSerializer, LikeSerializer , UserSerializer
 from rest_framework.authtoken.models import Token
 from rest_framework.authentication import TokenAuthentication
 from django.contrib.auth import authenticate
@@ -67,3 +67,32 @@ class PostView(APIView):
                 {"detail": "Invalid request"},
                 status=status.HTTP_400_BAD_REQUEST
             )
+
+class UserView(APIView):
+    def post(self, request):
+        action = request.data.get('action')
+
+        if action == 'create':
+            serializer = UserSerializer(data=request.data)
+            if serializer.is_valid():
+                serializer.save()
+                return Response(serializer.data, status=status.HTTP_201_CREATED)
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+        elif action == 'login':
+            email = request.data.get('username')
+            
+            password = request.data.get('password')
+            print(request.data.get('password'))
+            if not email or not password:
+                return Response({'error': 'Email and password are required'}, status=status.HTTP_400_BAD_REQUEST)
+
+            user = authenticate(request, email=email, password=password)
+            if user is not None:
+                # Optionally, you might want to use a token-based authentication system
+                # Here you can return a success message or a user-related data
+                return Response({'message': 'Login successful'}, status=status.HTTP_200_OK)
+            else:
+                return Response({'error': 'Invalid email or password'}, status=status.HTTP_401_UNAUTHORIZED)
+
+        return Response({'error': 'Invalid action'}, status=status.HTTP_400_BAD_REQUEST)
